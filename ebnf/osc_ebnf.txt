@@ -10,29 +10,34 @@ OSCPacket
 	| OSCBundle
 
 OSCMessage
-	::= Address PADDING ',' (NULL_BYTE PADDING | ( NonArgTypetags PADDING | (ArgTypetags PADDING Arguments) ))
+	::= Address ',' (NoTypetagsOrArgsAvailable | ( TypetagsWithoutArg | (TypetagsWithAtLeastOneArg Argument+) ))
 
 OSCBundle
 	::= '#bundle' NULL_BYTE OSCARG_TIMETAG OSCPacketBlob+
 
-OSCPacketBlob ::= BLOB_SIZE (OSCMessage | OSCBundle)
+OSCPacketBlob
+	::= BLOB_SIZE (OSCMessage | OSCBundle)
 
-Address ::= ('/' | AdressComponent+) NULL_BYTE
+Address ::= ('/' | AdressComponent+) NULL_BYTE PADDING
 
 AddressComponent
 	::= '/' ADDRESS_CHAR+
 
-NonArgTypetags
-	::= NonArgTypetag+ NULL_BYTE
+NoTypetagsOrArgsAvailable
+	::= NULL_BYTE PADDING
 
-ArgTypetags ::= MixedArgTypeTag? ArgTypeTag MixedArgTypeTag* NULL_BYTE
+TypetagsWithoutArg
+	::= NoArgTypetag+ NULL_BYTE PADDING
 
-NonArgTypetag
+TypetagsWithAtLeastOneArg
+	::= MixedArgTypeTag? ArgTypeTag MixedArgTypeTag* NULL_BYTE PADDING
+
+NoArgTypetag
 	::= OSCTYPE_TRUE
 	| OSCTYPE_FALSE
 	| OSCTYPE_NIL
 	| OSCTYPE_INF
-	| '[' NonArgTypetag+ ']'
+	| '[' NoArgTypetag+ ']'
 
 ArgTypeTag
 	::= OSCTYPE_INT32
@@ -48,7 +53,7 @@ ArgTypeTag
 	| '[' ArgTypetag+ ']'
 
 MixedArgTypeTag
-	::= NonArgTypetag
+	::= NoArgTypetag
 	| ArgTypeTag
 	| '[' MixedArgTypetag+ ']'
 
@@ -96,7 +101,7 @@ OSCTYPE_MIDI
 OSCTYPE_TYPED_BLOB
 	::= 'B'
 
-Arguments
+Argument
 	::= OSCARG_INT32
 	| OSCARG_INT64
 	| OSCARG_FLOAT
