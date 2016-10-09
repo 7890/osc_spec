@@ -1,0 +1,246 @@
+/* //tb/1610 */
+/* https://www.w3.org/TR/xquery/#EBNFNotation */
+/* convert to graphic: http://bottlecaps.de/rr/ui */
+
+/* /!\ this document isn't guaranteed to be right or complete */
+/* /!\ the newly introduced OSCTYPE_TYPED_BLOB is not part of OSC spec 1.0 */
+
+OSCPacket
+	::= OSCMessage
+	| OSCBundle
+
+OSCMessage
+	::= Address PADDING ',' (NULL_BYTE PADDING | ( NonArgTypetags PADDING | (ArgTypetags PADDING Arguments) ))
+
+OSCBundle
+	::= '#bundle' NULL_BYTE OSCARG_TIMETAG OSCPacketBlob+
+
+OSCPacketBlob ::= BLOB_SIZE (OSCMessage | OSCBundle)
+
+Address ::= ('/' | AdressComponent+) NULL_BYTE
+
+AddressComponent
+	::= '/' ADDRESS_CHAR+
+
+NonArgTypetags
+	::= NonArgTypetag+ NULL_BYTE
+
+ArgTypetags ::= MixedArgTypeTag? ArgTypeTag MixedArgTypeTag* NULL_BYTE
+
+NonArgTypetag
+	::= OSCTYPE_TRUE
+	| OSCTYPE_FALSE
+	| OSCTYPE_NIL
+	| OSCTYPE_INF
+	| '[' NonArgTypetag+ ']'
+
+ArgTypeTag
+	::= OSCTYPE_INT32
+	| OSCTYPE_INT64
+	| OSCTYPE_FLOAT
+	| OSCTYPE_DOUBLE
+	| OSCTYPE_CHAR
+	| OSCTYPE_STRING
+	| OSCTYPE_BLOB
+	| OSCTYPE_TIMETAG
+	| OSCTYPE_MIDI
+	| OSCTYPE_TYPED_BLOB
+	| '[' ArgTypetag+ ']'
+
+MixedArgTypeTag
+	::= NonArgTypetag
+	| ArgTypeTag
+	| '[' MixedArgTypetag+ ']'
+
+/*no arg required*/
+OSCTYPE_TRUE
+	::= 'T'
+
+OSCTYPE_FALSE
+	::= 'F'
+
+OSCTYPE_NIL
+	::= 'N'
+
+OSCTYPE_INF
+	::= 'I'
+
+/*arg required*/
+OSCTYPE_INT32
+	::= 'i'
+
+OSCTYPE_INT64
+	::= 'h'
+
+OSCTYPE_FLOAT
+	::= 'f'
+
+OSCTYPE_DOUBLE
+	::= 'd'
+
+OSCTYPE_CHAR
+	::= 'c'
+
+OSCTYPE_STRING
+	::= 's'
+
+OSCTYPE_BLOB
+	::= 'b'
+
+OSCTYPE_TIMETAG
+	::= 't'
+
+OSCTYPE_MIDI
+	::= 'm'
+
+OSCTYPE_TYPED_BLOB
+	::= 'B'
+
+Arguments
+	::= OSCARG_INT32
+	| OSCARG_INT64
+	| OSCARG_FLOAT
+	| OSCARG_DOUBLE
+	| OSCARG_CHAR
+	| OSCARG_STRING
+	| OSCARG_BLOB
+	| OSCARG_TIMETAG
+	| OSCARG_MIDI
+	| OSCARG_TYPED_BLOB
+
+OSCARG_INT32
+	::= FOUR_BYTES
+
+OSCARG_INT64
+	::= EIGHT_BYTES
+
+OSCARG_FLOAT
+	::= FOUR_BYTES
+
+OSCARG_DOUBLE
+	::= EIGHT_BYTES
+
+OSCARG_CHAR
+	::= TWO_NULL_BYTES NULL_BYTE BYTE
+
+OSCARG_BLOB
+	::= BLOB_SIZE BYTE* PADDING
+
+OSCARG_TIMETAG
+	::= IMMEDIATE
+	| NTP_SECONDS NTP_FRACTION
+
+OSCARG_MIDI
+	::= MIDI_PORT_BYTE MIDI_STATUS_BYTE ( MIDI_DATA_BYTE MIDI_DATA_BYTE? )? PADDING
+
+OSCARG_TYPED_BLOB
+	::= BLOB_TYPE OSCARG_INT32 BLOB_SIZE BYTE* PADDING
+
+BLOB_TYPE
+	::= TWO_NULL_BYTES NULL_BYTE (OSCTYPE_INT32 | OSCTYPE_INT64 | OSCTYPE_FLOAT | OSCTYPE_DOUBLE)
+
+BLOB_SIZE
+	::= FOUR_BYTES
+
+OSCARG_STRING
+	::= (ASCII_CHAR -NULL_BYTE)* NULL_BYTE PADDING
+
+/*ASCII-compatible means that regardless of context, single bytes with values from 0x00 through 0x7F encode the same characters that they would in ASCII
+0x80 through 0xFF have no defined meaning
+To be ASCII-compatible, a fixed-with encoding must encode all its characters using only one byte, so it can have no more than 256 characters*/
+
+ASCII_CHAR
+	::= NONPRINTABLE_ASCII_CHAR
+	| PRINTABLE_ASCII_CHAR
+
+NONPRINTABLE_ASCII_CHAR
+	::= B0x00
+	| '...'
+	| B0x1F
+
+PRINTABLE_ASCII_CHAR
+	::= B0x20
+	| '...'
+	| B0xFF
+
+ADDRESS_CHAR
+	::= PRINTABLE_ASCII_CHAR -(' ' '#' '*' ',' '/' '?' '[' ']' '{' '}') /*should encode as hex*/
+
+IMMEDIATE
+	::= FOUR_NULL_BYTES TWO_NULL_BYTES NULL_BYTE B0x01 	/*indicate immediate delivery*/
+
+NTP_SECONDS
+	::= FOUR_BYTES		/*seconds since midnight on January 1, 1900*/
+NTP_FRACTION
+	::= FOUR_BYTES		/*fractional parts of a second, n * 2^32*/
+
+/*make byte length of so far written bytes a multiple of 4*/
+PADDING ::= (NULL_BYTE
+	| TWO_NULL_BYTES
+	| TWO_NULL_BYTES NULL_BYTE)?
+
+BYTE ::=
+	B0x00
+	| B0x01
+	| '...'
+	| B0xFF
+
+TWO_BYTES
+	::= BYTE BYTE
+
+FOUR_BYTES
+	::= TWO_BYTES TWO_BYTES
+
+EIGHT_BYTES
+	::= FOUR_BYTES FOUR_BYTES
+
+NULL_BYTE
+	::= B0x00
+
+TWO_NULL_BYTES
+	::= NULL_BYTE NULL_BYTE
+
+FOUR_NULL_BYTES
+	::= TWO_NULL_BYTES TWO_NULL_BYTES
+
+EIGHT_NULL_BYTES
+	::= FOUR_NULL_BYTES FOUR_NULL_BYTES
+
+ZERO_BIT
+	::= 'Bit 0'
+
+TWO_ZERO_BITS
+	::= ZERO_BIT ZERO_BITS
+
+FOUR_ZERO_BITS
+	::= TWO_ZERO_BITS TWO_ZERO_BITS
+
+EIGHT_ZERO_BITS
+	::= FOUR_ZERO_BITS FOUR_ZERO_BITS
+
+ONE_BIT
+	::= 'Bit 1'
+
+TWO_ONE_BITS
+	::= ONE_BIT ONE_BIT
+
+FOUR_ONE_BITS
+	::= TWO_ONE_BITS TWO_ONE_BITS
+
+EIGHT_ONE_BITS
+	::= FOUR_ONE_BITS FOUR_ONE_BITS
+
+B0x00
+	::= EIGHT_ZERO_BITS
+
+B0x01
+	::= FOUR_ZERO_BITS TWO_ZERO_BITS ZERO_BIT ONE_BIT
+/*...*/
+B0xFF
+	::= EIGHT_ONE_BITS
+
+/*
+MIDI_PORT_BYTE ::=
+MIDI_STATUS_BYTE ::= 
+MIDI_DATA_BYTE ::=
+*/
