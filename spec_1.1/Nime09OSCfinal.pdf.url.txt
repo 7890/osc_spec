@@ -1,0 +1,3 @@
+http://cnmat.berkeley.edu/publication/features_and_future_open_sound_control_version_1_1_nime
+http://cnmat.berkeley.edu/system/files/attachments/Nime09OSCfinal.pdf
+Sun Oct  9 03:49:34 CEST 2016
